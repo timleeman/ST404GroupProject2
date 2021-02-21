@@ -18,3 +18,7 @@ load("~/Downloads/USACrime.rda")
 USACrime <- na.omit(USACrime)
 summary(USACrime)
 ```
+
+```{r}
+plot(pctCollGrad ~ violentPerPop, data = USACrime)
+```
