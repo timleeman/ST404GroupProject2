@@ -1,0 +1,20 @@
+---
+title: "ST404Project2DataCleaning"
+author: '1806987'
+date: "21/02/2021"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, include = FALSE, message = FALSE}
+library(dplyr)
+load("~/Downloads/USACrime.rda")
+```
+
+```{r}
+USACrime <- na.omit(USACrime)
+summary(USACrime)
+```
