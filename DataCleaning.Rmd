@@ -20,5 +20,12 @@ summary(USACrime)
 ```
 
 ```{r}
-plot(pctCollGrad ~ violentPerPop, data = USACrime)
+#encode pctUrban as factor
+USACrime <- mutate(USACrime, isUrban = if_else(pctUrban < 85, "Not Urban", "Urban")) 
+USACrime$isUrban <- as.factor(USACrime$isUrban)
+```
+
+```{r}
+#get rid of pacific level in region
+levels(USACrime$region) <- c("Midwest", "NorthEast", "West", "South", "West") 
 ```
