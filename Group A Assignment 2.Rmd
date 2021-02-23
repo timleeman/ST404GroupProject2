@@ -1,0 +1,66 @@
+---
+title: "Assignment 2"
+author: "Group A -"
+date: ""
+output:
+  pdf_document: default
+  word_document: default
+  html_document:
+    df_print: paged
+  html_notebook: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## 1 Findings
+
++ What are the major determinants of high crime rates?
++ Are there areas of the US with unusually low or high crime rates that do not conform to the general pattern?
++ Are the causes of violent and non-violent crime similar, or are there important differences?
+
+\newpage
+
+## 2 Statistical methodology
+
+### Cleaning Data
+
+After the exploratory data analysis completed assignment 1 we decided to do the following to clean up the data:  
+
++ Remove the NAs in medIncome and pctEmploy (Figure 1)
++ Remove unexpected values in ownHousMed, ownHousQrange, rentMed and rentQrange (Figure 1)
++ Change the Pacific region to West (Figure 2)
++ Use pctUrban values to create a rural/urban variable and make it a factor (Figure 3)
+
+\newpage
+
+
+## 3 Appendix  
+
+Packages
+```{r, results='hide', message=FALSE}
+library(dplyr)
+load("~/Documents/University/Year3/ST404/Assignment2/USACrime.Rda")
+```
+
+Figure 1 - Removing unexpected values and NA values
+```{r}
+USACrime$ownHousMed[USACrime$ownHousMed==500001] <- NA
+USACrime$ownHousQrange[USACrime$ownHousQrange==0] <- NA
+USACrime$rentMed[USACrime$rentMed==1001] <- NA
+USACrime$rentQrange[USACrime$rentQrange==0] <- NA
+USACrime.2 <- na.omit(USACrime)
+```
+
+Figure 2 - Changing Pacific region to West
+```{r}
+USACrime.2$region[USACrime$region.2 == "Pacific"] <- "West"
+```
+
+Figure 3 - Changing the pctUrban variables to factor
+```{r}
+USACrime.2 <- mutate(USACrime.2, isUrban = if_else(pctUrban < 85, "Not Urban", "Urban")) 
+USACrime.2$isUrban <- as.factor(USACrime.2$isUrban)
+```
+
