@@ -14,7 +14,7 @@ output:
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## 1 Findings
+# 1 Findings
 
 + What are the major determinants of high crime rates?
 + Are there areas of the US with unusually low or high crime rates that do not conform to the general pattern?
@@ -22,25 +22,58 @@ knitr::opts_chunk$set(echo = TRUE)
 
 \newpage
 
-## 2 Statistical methodology
+# 2 Statistical methodology
 
-### Cleaning Data
+## Cleaning Data
 
 After the exploratory data analysis completed assignment 1 we decided to do the following to clean up the data:  
 
 + Remove the NAs in medIncome and pctEmploy (Figure 1)
 + Remove unexpected values in ownHousMed, ownHousQrange, rentMed and rentQrange (Figure 1)
 + Change the Pacific region to West (Figure 2)
-+ Use pctUrban values to create a rural/urban variable and make it a factor (Figure 3)
++ Use pctUrban values to create a boolean variable splitting at 85% with 1 bring Urban and 0 being not Urban (Figure 3)
+
+## Transformations
+
+To create a model of this data we must first transform some of the variables that are heavily skewed.  
+We decided that a skewness value between -0.7 and 0.7 was acceptable and found the variables that were outside of this range.
+
+medIncome, pctLowEdu, pctNotHSgrad, pctCollGrad, pctUnemploy, pctKidsBornNevrMarr, pctVacantBoarded, ownHousMed, ownHousQrange, rentQrange, popDensity, pctForeignBorn, violentPerPop and nonViolPerPop are all the positively skewd variables and pctHousOccup is the only negatively skewed variable. (Figure 4)
+
+For the positively skewed variables our aim was to get the skewness in the acceptable range so transformed using log and square root and used the least skewed transformation as we look forward to modeling. However variables pctKidsBornNevrMarr and pctVacantBoarded both have 0 vales so cannot use the log transformation so will deal with this separately.  (Figure 5)  
+
+From this we see that 2 variables ( pctKidsBornNevrMarr, pctVacantBoarded) do not fall between the acceptable range when transformed and the rest do. To fix this we try different roots as the transformations. (Figure 6)  
+
+For the 1 negatively skewed variable, pctHousOccup, taking the exponential of (pctHousOccup/10) completed the transformation to an acceptable level. (Figure 7)
+
+The list of transformations for all variables:  
+
++ medIncome - log 
++ pctLowEdu - log
++ pctNotHSgrad - sqrt
++ pctCollGrad - log
++ pctUnemploy - log
++ ownHousMed - log
++ ownHousQrange - log
++ rentQrange - log
++ popDensity - log
++ pctForeignBorn - log
++ violentPerPop - log
++ nonViolPerPop - sqrt
++ pctKidsBornNevrMarr - 4th root 
++ pctVacantBoarded - cube root 
++ pctHousOccup - e^(x/10)
+
 
 \newpage
 
 
-## 3 Appendix  
+# 3 Appendix  
 
 Packages
 ```{r, results='hide', message=FALSE}
 library(dplyr)
+library(e1071)
 load("~/Documents/University/Year3/ST404/Assignment2/USACrime.Rda")
 ```
 
@@ -60,7 +93,70 @@ USACrime.2$region[USACrime$region.2 == "Pacific"] <- "West"
 
 Figure 3 - Changing the pctUrban variables to factor
 ```{r}
-USACrime.2 <- mutate(USACrime.2, isUrban = if_else(pctUrban < 85, "Not Urban", "Urban")) 
-USACrime.2$isUrban <- as.factor(USACrime.2$isUrban)
+USACrime.2 <- mutate(USACrime.2, isUrban = if_else(pctUrban < 85, 0, 1)) 
+```
+
+Figure 4 - Finding variables that need to be transformed
+```{r results="hide"}
+vars <- c(4,5,6,7,8,9,10,11,13,14,16,17,18,19,20,21,22,23,24,25)
+vars<- c(4:25)
+
+posVars <- c()
+negVars <- c()
+for (i in vars) {
+  if(skewness(USACrime.2[,i]) > 0.7){
+    posVars <- c(posVars, i)
+  }
+  if(skewness(USACrime.2[,i]) < -0.7){
+    negVars <- c(negVars, i)
+  }
+}
+
+print(posVars)
+print(negVars)
+```
+
+Figure 5 - Finding best transformations for positively skewed variables
+```{r results="hide"}
+posVars2 <- posVars[posVars != 12]
+posVars2 <- posVars2[posVars2 != 15]
+USACrimeTrans <- USACrime.2
+for (i in posVars2){
+  a <- abs(skewness(USACrime.2[,i]))
+  b <- abs(skewness(log(USACrime.2[,i])))
+  c <- abs(skewness(sqrt(USACrime.2[,i])))
+  z <- NA
+  y <- min(a,b,c)
+  if (y == a){
+    z <- "normal"
+  }
+  else if(y == b){
+    z <- "log"
+    USACrimeTrans[,i] <- log(USACrimeTrans[,i])
+  }
+  else{
+    z <- "sqrt"
+    USACrimeTrans[,i] <- sqrt(USACrimeTrans[,i])
+  }
+  print(paste(colnames(USACrime.2[i]),z,min(a,b,c)))
+}
+
+paste(colnames(USACrime.2[12]),"sqrt",skewness(sqrt(USACrime.2[,12])))
+paste(colnames(USACrime.2[15]),"sqrt",skewness(sqrt(USACrime.2[,15])))
+```
+
+Figure 6 - pctKidsBornNevrMarr, pctVacantBoarded transformations
+```{r results="hide"}
+paste(colnames(USACrime.2[12]),"4th root",skewness(USACrime.2[,12]^(1/4)))
+paste(colnames(USACrime.2[15]),"cube root",skewness(USACrime.2[,15]^(1/3)))
+
+USACrimeTrans[,12] <- USACrimeTrans[,12]^1/4
+USACrimeTrans[,15] <- USACrimeTrans[,15]^1/3
+```
+
+Figure 7 - pctHousOccup transformation
+```{r results="hide"}
+paste(colnames(USACrime.2[13]),"e^(x/10)",skewness(exp(USACrime.2[,13]/10)))
+USACrimeTrans[,13] <- exp(USACrime.2[,13]/10)
 ```
 
