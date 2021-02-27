@@ -1,0 +1,292 @@
+---
+title: "Assignment 2"
+author: "Group A -"
+date: ""
+output:
+  pdf_document: default
+  word_document: default
+  html_document:
+    df_print: paged
+  html_notebook: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# 1 Findings
+
++ What are the major determinants of high crime rates?
++ Are there areas of the US with unusually low or high crime rates that do not conform to the general pattern?
++ Are the causes of violent and non-violent crime similar, or are there important differences?
+
+\newpage
+
+# 2 Statistical methodology
+
+## Cleaning Data
+
+After the exploratory data analysis completed assignment 1 we decided to do the following to clean up the data:  
+
++ Remove the NAs in medIncome and pctEmploy (Figure 1)
++ Remove unexpected values in ownHousMed, ownHousQrange, rentMed and rentQrange (Figure 1)
++ Change the Pacific region to West (Figure 2)
++ Use pctUrban values to create a boolean variable splitting at 85% with 1 bring Urban and 0 being not Urban (Figure 3)
+
+## Transformations
+
+To create a model of this data we must first transform some of the variables that are heavily skewed.  
+We decided that a skewness value between -0.7 and 0.7 was acceptable and found the variables that were outside of this range. We will only use this method to transform the explanatory variables and transform the outcome variables to ensure homoscadisity. 
+
+medIncome, pctLowEdu, pctNotHSgrad, pctCollGrad, pctUnemploy, pctKidsBornNevrMarr, pctVacantBoarded, ownHousMed, ownHousQrange, rentQrange, popDensity and pctForeignBorn are all the positively skewd variables and pctHousOccup is the only negatively skewed variable. (Figure 4)
+
+For the positively skewed variables our aim was to get the skewness in the acceptable range so transformed using log and square root and used the least skewed transformation as we look forward to modeling. However variables pctKidsBornNevrMarr and pctVacantBoarded both have 0 vales so cannot use the log transformation so will deal with this separately.  (Figure 5)  
+
+From pctKidsBornNevrMarr, pctVacantBoarded we try square root, 4th root and taking the log(x+1) and from this we see that pctKidsBornNevrMarr should be 4th rooted and pctVacantBoarded should have a log(x+1) transformation.
+
+For the 1 negatively skewed variable, pctHousOccup, taking the exponential of (pctHousOccup/10) completed the transformation to an acceptable level. (Figure 7)
+
+The list of transformations for all variables:  
+
++ medIncome - log 
++ pctLowEdu - log
++ pctNotHSgrad - sqrt
++ pctCollGrad - log
++ pctUnemploy - log
++ ownHousMed - log
++ ownHousQrange - log
++ rentQrange - log
++ popDensity - log
++ pctForeignBorn - log
++ pctKidsBornNevrMarr - 4th root 
++ pctVacantBoarded - log(x + 1) 
++ pctHousOccup - e^(x/10)
+
+## Variables  Selection
+During our EDA we gave suggestions of the variables we would recommend for a linear model. We wanted variables that covered the whole data set with high correlation to the outcome variables however low correlation between each other so elected for the following: region, isUrban, pctNotHSgrad, pctWdiv, medIncome, rentQrange, (pctUnemploy or pctEmploy), (pctKids2Par or pctKidsBornNevrMarr), (pctHousOccup or pctHousOwnerOccup), (ownHousMed or rentMed). 
+
+To find the best variables of the ones above we chose to find the combination that minimized the RSS/AIC (as for a fixed number of explanatory variables the result will be the same). The resulting linear models gave an AIC of 3564.779 for violentPerPop and 1777.114 for nonViolPerPop. We will use these models and values as a bench mark for more rigorous model creation.
+
+### Stepwise regression with AIC
+Stepwise regression with an information criteria of AIC was completed to choose the best variables that balance model fit and model complexity.
+
+We used stepwise forward/backward and stepwise backward/forward on both outcome variables to create 2 linear models for both violentPerPop and nonViolPerPop. From this calculated the AIC for each model and found that stepwise forward/backward produced the best AIC value for both variables of 3505.804 and 1679.211 (Figure 10)
+
+Both of these produced better values than our EDA produced benchmark.
+
+
+### LASSO regression
+
+\newpage
+
+
+# 3 Appendix  
+
+Packages
+```{r, results='hide', message=FALSE}
+library(dplyr)
+library(e1071)
+library(RcmdrMisc)
+library(glmnet)
+load("~/Documents/University/Year3/ST404/Assignment1/USACrime.Rda")
+```
+
+Figure 1 - Removing unexpected values and NA values
+```{r}
+USACrime$ownHousMed[USACrime$ownHousMed==500001] <- NA
+USACrime$ownHousQrange[USACrime$ownHousQrange==0] <- NA
+USACrime$rentMed[USACrime$rentMed==1001] <- NA
+USACrime$rentQrange[USACrime$rentQrange==0] <- NA
+USACrime = na.omit(USACrime)
+```
+
+Figure 2 - Changing Pacific region to West
+```{r}
+levels(USACrime$region) = c("MidWest", "NorthEast", "West", "South", "West")
+```
+
+Figure 3 - Changing the pctUrban variables to factor
+```{r}
+USACrime = transform(USACrime, pctUrban = +(pctUrban > 85))
+```
+
+Figure 4 - Finding variables that need to be transformed
+```{r results="hide"}
+vars<- c(c(4:22))
+
+posVars <- c()
+negVars <- c()
+for (i in vars) {
+  if(skewness(USACrime[,i]) > 0.7){
+    posVars <- c(posVars, i)
+  }
+  if(skewness(USACrime[,i]) < -0.7){
+    negVars <- c(negVars, i)
+  }
+}
+
+print(posVars)
+print(negVars)
+```
+
+Figure 5 - Finding best transformations for positively skewed variables
+```{r results="hide"}
+posVars2 <- posVars[posVars != 12]
+posVars2 <- posVars2[posVars2 != 15]
+for (i in posVars2){
+  a <- abs(skewness(USACrime[,i]))
+  b <- abs(skewness(log(USACrime[,i])))
+  c <- abs(skewness(sqrt(USACrime[,i])))
+  z <- NA
+  y <- min(a,b,c)
+  if (y == a){
+    z <- "normal"
+  }
+  else if(y == b){
+    z <- "log"
+  }
+  else{
+    z <- "sqrt"
+  }
+  print(paste(colnames(USACrime[i]),z,min(a,b,c)))
+}
+```
+
+Figure 6 - pctKidsBornNevrMarr, pctVacantBoarded transformations
+```{r results="hide"}
+paste(colnames(USACrime[12]),"sqrt",skewness(sqrt(USACrime[,12])))
+paste(colnames(USACrime[15]),"sqrt",skewness(sqrt(USACrime[,15])))
+paste(colnames(USACrime[12]),"4th root",skewness(USACrime[,12]^0.25))
+paste(colnames(USACrime[15]),"4th root",skewness(USACrime[,15]^0.25))
+paste(colnames(USACrime[12]),"log(x+1)",skewness(log(USACrime[,12]+1)))
+paste(colnames(USACrime[15]),"log(x+1)",skewness(log(USACrime[,15]+1)))
+```
+
+Figure 7 - pctHousOccup transformation
+```{r results="hide"}
+paste(colnames(USACrime[13]),"e^(x/10)",skewness(exp(USACrime[,13]/10)))
+```
+
+Figure 8 - Transformations
+```{r results="hide"}
+USACrime2 = transform(USACrime,
+                      medIncome = log(medIncome),
+                      pctLowEdu = log(pctLowEdu),
+                      pctNotHSgrad = pctNotHSgrad^0.5,
+                      pctCollGrad = log(pctCollGrad),
+                      pctUnemploy = log(pctUnemploy),
+                      pctKidsBornNevrMarr = pctKidsBornNevrMarr^0.25,
+                      pctHousOccup = exp(pctHousOccup/10),
+                      pctVacantBoarded = log(pctVacantBoarded+1),
+                      ownHousMed = log(ownHousMed),
+                      ownHousQrange = log(ownHousQrange),
+                      rentMed = log(rentMed),
+                      rentQrange = log(rentQrange),
+                      popDensity = log(popDensity),
+                      pctForeignBorn = log(pctForeignBorn),
+                      violentPerPop = log(violentPerPop),
+                      nonViolPerPop = log(nonViolPerPop))
+```
+
+
+Figure 9 - RSS minimization for EDA Variables
+```{r results="hide"}
+RSSVMin <- Inf
+modelDataVMinRSS <- NULL
+
+for (i in 1:2) {
+  for(j in 1:2){
+    for (k in 1:2) {
+      for (l in 1:2) {
+        modelData <- subset(USACrime2, select =
+                    c(region,pctUrban,pctNotHSgrad,pctWdiv,medIncome,rentQrange,
+                    c(pctUnemploy, pctEmploy)[i],
+                    c(pctKids2Par,pctKidsBornNevrMarr)[j],
+                    c(pctHousOccup, pctHousOwnerOccup)[k], 
+                    c(ownHousMed, rentMed)[l]))
+        lmA <- lm(USACrime2$violentPerPop ~ ., modelData)
+        if (sum(residuals(lmA)^2) < RSSVMin) {
+          RSSVMin <- sum(residuals(lmA)^2)
+          modelDataVMinRSS <- modelData
+        }
+      }
+    }
+  }
+}
+
+lmVMinRSS <- lm(USACrime2$violentPerPop ~ ., modelDataVMinRSS)
+summary(lmVMinRSS)
+plot(lmVMinRSS)
+print(AIC(lmVMinRSS))
+
+RSSNVMin <- Inf
+modelDataNVMinRSS <- NULL
+
+for (i in 1:2) {
+  for(j in 1:2){
+    for (k in 1:2) {
+      for (l in 1:2) {
+        modelData <- subset(USACrime2, select =
+                    c(region,pctUrban,pctNotHSgrad,pctWdiv,medIncome,rentQrange,
+                    c(pctUnemploy, pctEmploy)[i],
+                    c(pctKids2Par,pctKidsBornNevrMarr)[j],
+                    c(pctHousOccup, pctHousOwnerOccup)[k], 
+                    c(ownHousMed, rentMed)[l]))
+        lmA <- lm(USACrime2$nonViolPerPop ~ ., modelData)
+        if (sum(residuals(lmA)^2) < RSSNVMin) {
+          RSSNVMin <- sum(residuals(lmA)^2)
+          modelDataNVMinRSS <- modelData
+        }
+      }
+    }
+  }
+}
+
+lmNVMinRSS <- lm(USACrime2$nonViolPerPop ~ ., modelDataVMinRSS)
+summary(lmNVMinRSS)
+plot(lmNVMinRSS)
+
+print(AIC(lmNVMinRSS))
+```
+Figure 10 - Stepwise regression with AIC
+```{r results="hide"}
+#REMOVING STATES AND VIOL/NONVIOL
+USACrime2V = USACrime2[,c(-1,-24)]
+USACrime2NV = USACrime2[,c(-1,-23)]
+
+#VIOL AIC
+violentModelAICMax = stepwise(lm(violentPerPop ~ ., data = USACrime2V), direction = "backward/forward", criterion = "AIC", trace = FALSE)
+AIC(violentModelAICMax)
+violentModelAICMin = stepwise(lm(violentPerPop ~ ., data = USACrime2V), direction = "forward/backward", criterion = "AIC", trace = FALSE)
+AIC(violentModelAICMin)
+
+#NONVIOL AIC
+nonViolModelAICMax = stepwise(lm(nonViolPerPop ~ ., data = USACrime2NV), direction = "backward/forward", criterion = "AIC", trace = FALSE)
+AIC(nonViolModelAICMax)
+nonViolModelAICMin = stepwise(lm(nonViolPerPop ~ ., data = USACrime2NV), direction = "forward/backward", criterion = "AIC", trace = FALSE)
+AIC(nonViolModelAICMin)
+```
+
+Figure 11 - LASSO Regression
+```{r results="hide"}
+set.seed(1234)
+modelLassoA <- lm(violentPerPop ~ 1 + ., data = USACrime2[-c(1,24)])
+modelLassoB <- lm(nonViolPerPop ~ 1 + ., data = USACrime2[-c(1,23)])
+X1 <- model.matrix(modelLassoA)
+X2 <- model.matrix(modelLassoB)
+y1 <- log(USACrime$violentPerPop)
+y2 <- log(USACrime$nonViolPerPop)
+fitA <- glmnet(X1, y1)
+fitB <- glmnet(X2, y2)
+plot(fitA, xvar = "lambda")
+plot(fitB, xvar = "lambda")
+model5A <- cv.glmnet(X1, y1)
+model5B <- cv.glmnet(X2, y2)
+model5A
+model5B
+coef(model5A)
+coef(model5B)
+plot(model5A)
+plot(model5B)
+```
+
