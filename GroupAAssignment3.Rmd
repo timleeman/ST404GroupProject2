@@ -22,7 +22,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 \newpage
 
-# 2 Statistical methodology
+# 2 Statistical Methodology
 
 ## Cleaning Data
 
@@ -74,8 +74,20 @@ We used stepwise forward/backward and stepwise backward/forward on both outcome 
 
 Both of these produced better values than our EDA produced benchmark.
 
-
 ### LASSO regression
+
+
+
+## Compareing the 2 models
+After completing the two model creation methods we now have to decide which models are better for each of the outcome variables. To do this we calculated the Mean Square Error for each of the models (Figure 12).  
+Getting the following results:
+
++ violentModelAIC MSE = 0.398177113804347
++ nonViolModelAIC MSE = 0.145304970809664
++ violentModelLASSO MSE = 0.42072263243735
++ nonViolModelLASSO MSE = 0.157273523662924
+
+From this we see that the AIC models give the lowest MSE.
 
 \newpage
 
@@ -186,10 +198,7 @@ USACrime2 = transform(USACrime,
                       pctForeignBorn = log(pctForeignBorn),
                       violentPerPop = log(violentPerPop),
                       nonViolPerPop = log(nonViolPerPop))
-colnames(USACrime2)[3] <- "isUrban"
-USACrime2$isUrban <- factor(USACrime2$isUrban)
 ```
-
 
 Figure 9 - RSS minimization for EDA Variables
 ```{r results="hide"}
@@ -201,7 +210,7 @@ for (i in 1:2) {
     for (k in 1:2) {
       for (l in 1:2) {
         modelData <- subset(USACrime2, select =
-                    c(region,isUrban,pctNotHSgrad,pctWdiv,medIncome,rentQrange,
+                    c(region,pctUrban,pctNotHSgrad,pctWdiv,medIncome,rentQrange,
                     c(pctUnemploy, pctEmploy)[i],
                     c(pctKids2Par,pctKidsBornNevrMarr)[j],
                     c(pctHousOccup, pctHousOwnerOccup)[k], 
@@ -229,7 +238,7 @@ for (i in 1:2) {
     for (k in 1:2) {
       for (l in 1:2) {
         modelData <- subset(USACrime2, select =
-                    c(region,isUrban,pctNotHSgrad,pctWdiv,medIncome,rentQrange,
+                    c(region,pctUrban,pctNotHSgrad,pctWdiv,medIncome,rentQrange,
                     c(pctUnemploy, pctEmploy)[i],
                     c(pctKids2Par,pctKidsBornNevrMarr)[j],
                     c(pctHousOccup, pctHousOwnerOccup)[k], 
@@ -250,6 +259,7 @@ plot(lmNVMinRSS)
 
 print(AIC(lmNVMinRSS))
 ```
+
 Figure 10 - Stepwise regression with AIC
 ```{r results="hide"}
 #REMOVING STATES AND VIOL/NONVIOL
@@ -267,6 +277,9 @@ nonViolModelAICMax = stepwise(lm(nonViolPerPop ~ ., data = USACrime2NV), directi
 AIC(nonViolModelAICMax)
 nonViolModelAICMin = stepwise(lm(nonViolPerPop ~ ., data = USACrime2NV), direction = "forward/backward", criterion = "AIC", trace = FALSE)
 AIC(nonViolModelAICMin)
+
+plot(violentModelAICMin)
+plot(nonViolModelAICMin)
 ```
 
 Figure 11 - LASSO Regression
@@ -291,4 +304,13 @@ coef(model5B)
 plot(model5A)
 plot(model5B)
 ```
+Figure 12 - MSE of the models from stepwise regression with AIC and LASSO
+```{r results="hide"}
+paste("violentModelAIC MSE =",mean(violentModelAICMin$residuals^2))
+paste("nonViolModelAIC MSE =",mean(nonViolModelAICMin$residuals^2))
+
+paste("violentModelLASSO MSE =",model5A$cvm[model5A$lambda == model5A$lambda.1se])
+paste("nonViolModelLASSO MSE =",model5B$cvm[model5B$lambda == model5B$lambda.1se])
+```
+
 
