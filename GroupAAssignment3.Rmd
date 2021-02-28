@@ -186,6 +186,8 @@ USACrime2 = transform(USACrime,
                       pctForeignBorn = log(pctForeignBorn),
                       violentPerPop = log(violentPerPop),
                       nonViolPerPop = log(nonViolPerPop))
+colnames(USACrime2)[3] <- "isUrban"
+USACrime2$isUrban <- factor(USACrime2$isUrban)
 ```
 
 
@@ -199,7 +201,7 @@ for (i in 1:2) {
     for (k in 1:2) {
       for (l in 1:2) {
         modelData <- subset(USACrime2, select =
-                    c(region,pctUrban,pctNotHSgrad,pctWdiv,medIncome,rentQrange,
+                    c(region,isUrban,pctNotHSgrad,pctWdiv,medIncome,rentQrange,
                     c(pctUnemploy, pctEmploy)[i],
                     c(pctKids2Par,pctKidsBornNevrMarr)[j],
                     c(pctHousOccup, pctHousOwnerOccup)[k], 
@@ -227,7 +229,7 @@ for (i in 1:2) {
     for (k in 1:2) {
       for (l in 1:2) {
         modelData <- subset(USACrime2, select =
-                    c(region,pctUrban,pctNotHSgrad,pctWdiv,medIncome,rentQrange,
+                    c(region,isUrban,pctNotHSgrad,pctWdiv,medIncome,rentQrange,
                     c(pctUnemploy, pctEmploy)[i],
                     c(pctKids2Par,pctKidsBornNevrMarr)[j],
                     c(pctHousOccup, pctHousOwnerOccup)[k], 
