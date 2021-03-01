@@ -76,6 +76,72 @@ Both of these produced better values than our EDA produced benchmark.
 
 ### LASSO regression
 
+We also wanted to consider penalised regression methods for finding an optimal linear model. Here, we use LASSO regression which will perform both variable selection and coefficient penalisation. We started with all of the possible explanatory variables (excluding `State`) and ran a LASSO regression algorithm which gave us the following plots:
+
+```{r results="hide", echo = FALSE}
+set.seed(1234)
+X1 <- model.matrix(lm(violentPerPop ~ 1 + ., data = USACrime2[-c(1,24)]))
+X2 <- model.matrix(lm(nonViolPerPop ~ 1 + ., data = USACrime2[-c(1,23)]))
+y1 <- log(USACrime$violentPerPop)
+y2 <- log(USACrime$nonViolPerPop)
+fitA <- glmnet(X1, y1, alpha = 1)
+fitB <- glmnet(X2, y2, alpha = 1)
+{plot(fitA, xvar = "lambda", label = TRUE, main = "LASSO Regression on Violent Crime", cex.main = .7)
+plot(fitB, xvar = "lambda", label = TRUE, main = "LASSO Regression on Non-Violent Crime", cex.main = .7)}
+```
+Note that the variables `region`, `isUrban`, `pctHousOccup` and `pctHousOwnerOccup` still have non-zero coefficients for higher values of lambda (our penalty factor) in the case of violent crime, and `region`, `isUrban`, `pctHousOccup` and `pctWdiv` have non-zero coefficients for higher values of lambda. This is fairly consistent with what we found when using stepwise regression for variable selection: `region` and `isUrban` are identified as important by both stepwise and LASSO regression for both types of crime. We also see that `pctHousOccup` and `pctWdiv` are important explanatory variables for non-violent crime according to both stepwise and LASSO regression. Additionally `pctHousOccup` is chosen by stepwise regression for violent crime and is kept for most values of lambda in lasso regression. The only difference we see is that `pctHousOwnerOccup` is not chosen by stepwise regression when modelling violent crime rates but it is kept for most values of lambda by LASSO, although with a very small coefficient.
+
+Here we find optimal values of lambda to minimise error in the model:
+
+
+```{r echo = FALSE}
+set.seed(1234)
+model5A <- cv.glmnet(X1, y1, alpha = 1)
+model5B <- cv.glmnet(X2, y2, alpha = 1)
+{par(mfrow = c(1, 2))
+plot(model5A, sub = "Violent Crime")
+plot(model5B, sub = "Non-Violent Crime")}
+coef(model5A)
+coef(model5B)
+```
+
+We take the value of lambda as the maximum which is one standard error away from the value of lambda which minimises mean square error, which for violent crime is $\lambda = 0.05445$ and for non-violent crime is
+$\lambda = 0.03881$. We then get the following model coefficients (rounded to 3 significant figures):
+
+\begin{center}
+\begin{tabular}{|c|c|c|}
+\hline
+\textbf{Variable} & \textbf{Violent} & \textbf{Non-Violent} \\ \hline
+Intercept & 7.49 & 10.6 \\ \hline
+\texttt{region} - North East & -0.132 & -0.237 \\ \hline
+\texttt{region} - West & 0.209 & 0.0273 \\ \hline
+\texttt{region} - South & 0.136 & 0 \\ \hline
+\texttt{isUrban} & 0.157 & 0.0292 \\ \hline
+\texttt{pctWdiv} & -0.0116 & 0 \\ \hline
+\texttt{pctKids2Par} & -0.0338 & -0.0250 \\ \hline
+\texttt{pctKidsBornNevrMarr} & 0.774 & 0 \\ \hline
+\texttt{pctHousOccup} & -0.0000165 & -0.0000114 \\ \hline
+\texttt{pctHousOwnerOccup} & 0 & -0.00258 \\ \hline
+\texttt{pctVacantBoarded} & 0.0279 & 0.00579 \\ \hline
+\texttt{pctVacant6up} & 0 & -0.000767 \\ \hline
+\texttt{ownHousQrange} & 0.0142 & 0 \\ \hline
+\texttt{pctForeignBorn} & 0.107 & 0.0188 \\ \hline
+\end{tabular}
+\end{center}
+
+A problem with these models is that they both select pairs of variables which have very high correlation. For example the model for violent crime picks both `pctKids2Par` and `pctKidsBornNevrMarr` and the non-violent model picks both `pctVacantBoarded` and `pctVacant6up` and as such these models are likely to have problems regarding multicollinearity. Additionally we see that not all levels of the categorical variable `region` have been given coefficients in the model for non-violent crime which is problematic since we know there are differences in crime rates across regions.  
+To address this, we try taking the the variables picked by the LASSO regression and fit a normal least squares regression on those variables:
+
+```{r echo = FALSE}
+model6A <- lm(violentPerPop ~ region + isUrban + pctWdiv + pctKids2Par + pctKidsBornNevrMarr + pctHousOccup + pctVacantBoarded + pctForeignBorn, data = USACrime2)
+model6B <- lm(nonViolPerPop ~ region + isUrban + pctKids2Par + pctKidsBornNevrMarr + pctHousOccup + pctHousOwnerOccup + pctVacantBoarded + pctVacant6up + pctForeignBorn, data = USACrime2)
+
+AIC(model6A)
+AIC(model6B)
+```
+We find that these models are not an improvement on our previous models which used stepwise regression to select variables and then ridge regression to apply a penalty to the coefficients. These models which use the variables selected by LASSO without penalty have a higher AIC and as such we abandon these models.
+
+
 
 
 ## Compareing the 2 models
