@@ -2,7 +2,7 @@
 
 **Team A Group Project**
 
-Final R Markdown for report is in ST404Assignment2GroupAFinal
+Final R Markdown for report is in ST404Assignment2GroupAFinal.Rmd
 
 Libraries used are:
 + dplyr
