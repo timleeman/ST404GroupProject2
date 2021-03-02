@@ -108,6 +108,7 @@ USACrime$rentQrange[USACrime$rentQrange==0] <- NA
 USACrime = na.omit(USACrime)
 levels(USACrime$region) = c("MidWest", "NorthEast", "West", "South", "West")
 USACrime = transform(USACrime, pctUrban = +(pctUrban > 85))
+names(USACrime)[3] <- "isUrban"
 ```
 
 After the exploratory data analysis completed assignment 1 we decided to do the following to clean up the data:  
@@ -287,8 +288,8 @@ Intercept & 7.49 & 10.6 \\ \hline
 \texttt{pctVacantBoarded} & 0.0279 & 0.00579 \\ \hline
 \texttt{pctVacant6up} & 0 & -0.000767 \\ \hline
 \texttt{ownHousQrange} & 0.0142 & 0 \\ \hline
-\texttt{pctForeignBorn} & 0.107 & 0.0188 \\ \hline
 \texttt{rentQrange} & 0 & -0.0265 \\ \hline
+\texttt{pctForeignBorn} & 0.107 & 0.0188 \\ \hline
 \end{tabular}
 \end{center}
 
@@ -350,7 +351,7 @@ nonViolModelAICMin = lm(nonViolPerPop ~ region
                         + ownHousMed
                         + pctVacant6up
                         + pctLowEdu
-                        + pctUrban
+                        + isUrban
                         + pctWdiv
                         + pctVacantBoarded
                         , data = USACrime2NV)
@@ -418,9 +419,10 @@ Figure 2 - Changing Pacific region to West
 levels(USACrime$region) = c("MidWest", "NorthEast", "West", "South", "West")
 ```
 
-Figure 3 - Changing the pctUrban variables to factor
+Figure 3 - Changing the pctUrban variable to factor
 ```{r eval = FALSE}
 USACrime = transform(USACrime, pctUrban = +(pctUrban > 85))
+names(USACrime)[3] <- "isUrban"
 ```
 
 Figure 4 - Finding variables that need to be transformed
@@ -480,6 +482,7 @@ USACrime2 = transform(USACrime,
                       pctForeignBorn = log(pctForeignBorn),
                       violentPerPop = log(violentPerPop),
                       nonViolPerPop = log(nonViolPerPop))
+
 ```
 
 Figure 7 - RSS minimization for EDA Variables
@@ -491,7 +494,7 @@ for (i in 1:2) {
     for (k in 1:2) {
       for (l in 1:2) {
         modelData <- subset(USACrime2, select =
-                    c(region,pctUrban,pctNotHSgrad,pctWdiv,medIncome,rentQrange,
+                    c(region,isUrban,pctNotHSgrad,pctWdiv,medIncome,rentQrange,
                     c(pctUnemploy, pctEmploy)[i],
                     c(pctKids2Par,pctKidsBornNevrMarr)[j],
                     c(pctHousOccup, pctHousOwnerOccup)[k], 
@@ -514,7 +517,7 @@ for (i in 1:2) {
     for (k in 1:2) {
       for (l in 1:2) {
         modelData <- subset(USACrime2, select =
-                    c(region,pctUrban,pctNotHSgrad,pctWdiv,medIncome,rentQrange,
+                    c(region,isUrban,pctNotHSgrad,pctWdiv,medIncome,rentQrange,
                     c(pctUnemploy, pctEmploy)[i],
                     c(pctKids2Par,pctKidsBornNevrMarr)[j],
                     c(pctHousOccup, pctHousOwnerOccup)[k], 
@@ -579,11 +582,11 @@ coef(model5B)
 
 Figure 11 - Linear models AIC using LASSO regression variables
 ```{r eval = FALSE}
-model6A <- lm(violentPerPop ~ region + pctUrban 
+model6A <- lm(violentPerPop ~ region + isUrban 
               + pctWdiv + pctKids2Par + pctKidsBornNevrMarr 
               + pctHousOccup + pctVacantBoarded + pctForeignBorn 
               + ownHousQrange, data = USACrime2)
-model6B <- lm(nonViolPerPop ~ region + pctUrban + pctKids2Par 
+model6B <- lm(nonViolPerPop ~ region + isUrban + pctKids2Par 
               + pctKidsBornNevrMarr + pctHousOccup + pctHousOwnerOccup 
               + pctVacantBoarded + pctVacant6up 
               + pctForeignBorn + rentQrange, data = USACrime2)
@@ -616,7 +619,7 @@ USACrime2NV = USACrime2NV[c(-320,-363,-1548),]
 nonViolModelAICMin = lm(nonViolPerPop ~ region + pctKids2Par
  + pctHousOccup + pctForeignBorn + rentQrange + pctEmploy
  + pctCollGrad + ownHousMed + pctVacant6up + pctLowEdu
- + pctUrban + pctWdiv + pctVacantBoarded, data = USACrime2NV)
+ + isUrban + pctWdiv + pctVacantBoarded, data = USACrime2NV)
 plot(nonViolModelAICMin, which = 3, sub.caption = "")
 ols_vif_tol(nonViolModelAICMin)
 set.seed(6375)
