@@ -1,9 +1,10 @@
-# ST404GroupProject2
-Team A Group Project
+# ST404 Group Project 2
+
+**Team A Group Project**
 
 Final R Markdown for report is in ST404Assignment2GroupAFinal
 
-Libraries used are
+Libraries used are:
 + dplyr
 + e1071
 + RcmdrMisc
