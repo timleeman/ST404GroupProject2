@@ -11,7 +11,8 @@ output:
 header-includes:
 - \usepackage{bbm}
 fontsize: 11pt
-spacing: 1.5
+spacing: 1.5pt
+urlcolor: blue
 ---
 
 ```{r setup, include=FALSE}
@@ -83,7 +84,9 @@ Finally our models found that the percentage of population born in a foreign cou
 
 So we can see that the factors effecting violent crime are mostly similar. Some variables have different effects as seen by differences in magnitude of coefficients. The two models select different variables in a lot of cases but usually they both select at least one variable to explain a particular factor such as housing/rent prices. The exception here is employment rate, which only seems to affect non-violent crime.
 
-To examine whether there were any areas in the US which did not fit the general pattern, we calculated the difference between actual and fitted values from our models for violent and non violent crime across states. We found that all states fit the pattern predicted by the model well in the case of non-violent crime, however when looking at errors in predicting violent crime there was one state --- North Dakota --- whose actual values for rates of violent crime were fairly consistenly lower than our model predictions, so it appears that North Dakota does not fit the general pattern in crime rates across the US for violent crime.
+To examine whether there were any areas in the US which did not fit the general pattern, we calculated the difference between actual and fitted values from our models for violent and non violent crime across states. We found that all states fit the pattern predicted by the model well in the case of non-violent crime, however when looking at errors in predicting violent crime there was one state --- North Dakota --- whose actual values for rates of violent crime were fairly consistently lower than our model predictions, so it appears that North Dakota does not fit the general pattern in crime rates across the US for violent crime.
+
+In terms of problems in our data set, we would have liked to have seen data on community/local government budgets and police numbers/police spending. More police reducing crime is not something which has been completely proven but there is some evidence that increase in policing numbers can lead to reduction in crime, at least in the UK ([Police and Crime Reduction Paper](http://criminaljusticealliance.org/wp-content/uploads/2017/07/Police-foundation-police-and-crime-reduction-2013.pdf)) and as such the data on number of police or police spending in each community may have proven useful in predicting crime rates, since we would expect this trend to be similar in other countries.
 
 \newpage
 
@@ -112,11 +115,11 @@ USACrime = transform(USACrime, pctUrban = +(pctUrban > 85))
 names(USACrime)[3] <- "isUrban"
 ```
 
-After the exploratory data analysis completed assignment 1 we decided to do the following to clean up the data:  
+After the exploratory data analysis completed in assignment 1 we decided to do the following to clean up the data:  
 
 + Remove the NAs in `medIncome` and `pctEmploy` and incorrect values in `ownHousMed`, `ownHousQrange`, `rentMed` and `rentQrange` (Appendix 1)
 + Merge the Pacific level in region into West (Appendix 2)
-+ Use `pctUrban` values to create a boolean variable splitting at 85% with 1 bring Urban and 0 being not Urban (Appendix 3)
++ Use `pctUrban` values to create a Boolean variable splitting at 85% with 1 being Urban and 0 being not Urban (Appendix 3)
 
 ## Transformations
 
@@ -153,11 +156,11 @@ USACrime2 = transform(USACrime,
 ```
 
 To create a model of this data we must first transform some of the variables that are heavily skewed.  
-We decided that a skewness value between -0.7 and 0.7 was acceptable and found the variables that were outside of this range. We will only use this method to transform the explanatory variables and transform the outcome variables to ensure homoscadisity. 
+We decided that a skewness value between -0.7 and 0.7 was acceptable and found the variables that were outside of this range. We will only use this method to transform the explanatory variables and transform the outcome variables to ensure homoscedasticity. 
 
 `medIncome`, `pctLowEdu`, `pctNotHSgrad`, `pctCollGrad`, `pctUnemploy`, `pctKidsBornNevrMarr`, `pctVacantBoarded`, `ownHousMed`, `ownHousQrange`, `rentQrange`, `popDensity` and `pctForeignBorn` are all the positively skewed variables and `pctHousOccup` is the only negatively skewed variable. (Appendix 4)
 
-For the positively skewed variables our aim was to get the skewness in the acceptable range so transformed using log and square root and used the least skewed transformation as we look forward to modeling. However variables `pctKidsBornNevrMarr` and `pctVacantBoarded` both have 0 vales so cannot use the log transformation so will deal with this separately.  (Appendix 5)  
+For the positively skewed variables our aim was to get the skewness in the acceptable range so transformed using log and square root and used the least skewed transformation as we look forward to modeling. However variables `pctKidsBornNevrMarr` and `pctVacantBoarded` both have 0 values so we cannot use the log transformation so we will deal with this separately.  (Appendix 5)  
 
 From `pctKidsBornNevrMarr`, `pctVacantBoarded` we try square root, 4th root and taking the log(x+1) and from this we see that `pctKidsBornNevrMarr` should be 4th rooted and `pctVacantBoarded` should have a log(x+1) transformation.
 
@@ -182,7 +185,7 @@ The list of transformations for all variables (Appendix 6):
 ## Variables  Selection
 During our EDA we gave suggestions of the variables we would recommend for a linear model. We wanted variables that covered the whole data set with high correlation to the outcome variables however low correlation between each other so elected for the following: `region`, `isUrban`, `pctNotHSgrad`, `pctWdiv`, `medIncome`, `rentQrange`, (`pctUnemploy` or `pctEmploy`), (`pctKids2Par` or `pctKidsBornNevrMarr`), (`pctHousOccup` or `pctHousOwnerOccup`), (`ownHousMed` or `rentMed`). 
 
-To find the best variables of the ones above we chose to find the combination that minimized the RSS/AIC (as for a fixed number of explanatory variables the result will be the same). The resulting linear models gave an AIC of 3564.779 for `violentPerPop` and 1777.114 for `nonViolPerPop` (Appendix 7). We will use these models and values as a bench mark for more rigorous model creation.
+To find the best variables of the ones above we chose to find the combination that minimized the RSS/AIC (as for a fixed number of explanatory variables the result will be the same). The resulting linear models gave an AIC of 3564.779 for `violentPerPop` and 1777.114 for `nonViolPerPop` (Appendix 7). We will use these models and values as a bench-mark for more rigorous model creation.
 
 ## Stepwise regression with AIC
 
@@ -197,9 +200,9 @@ nonViolModelAICMax = stepwise(lm(nonViolPerPop ~ ., data = USACrime2NV), directi
 nonViolModelAICMin = stepwise(lm(nonViolPerPop ~ ., data = USACrime2NV), direction = "forward/backward", criterion = "AIC", trace = FALSE)
 ```
 
-We tried applying bidirectional elimination stepwise regression with AIC, one starting with the null model and another starting from the maximal model. (Appendix 8)  
-Through this method, we found that both violent crime models have 14 parameters, and only 1 out of the 14 parameters differ (`pctHousOwnerOccup` in first model, `medIncome` in second model). Since stepwise regression lead to very similar final models, we can be confident that one of the models is the global optimal model. The coeffients shown below show how similar the models are.  
-Applying the same technique to model non-violent crime, a similar result is obtained (Appendix 8). Both models have 13 explanatory variables in common and differ only by two variables (first model has `pctNotHSgrad` and `ownHousQrange`, while second model has `pctCollGrad`). Since the two models overlap significantly, we are again confident that the global optimal model is the one with the lower AIC value. The coeffients shown below show how similar the models are. (Note: b/f is stepwise starting at maximal model, f/b is stepwise starting at minimal model)
+We tried applying bidirectional elimination step-wise regression with AIC, one starting with the null model and another starting from the maximal model. (Appendix 8)  
+Through this method, we found that both violent crime models have 14 parameters, and only 1 out of the 14 parameters differ (`pctHousOwnerOccup` in first model, `medIncome` in second model). Since step-wise regression lead to very similar final models, we can be confident that one of the models is the global optimal model. The coefficients shown below show how similar the models are.  
+Applying the same technique to model non-violent crime, a similar result is obtained (Appendix 8). Both models have 13 explanatory variables in common and differ only by two variables (first model has `pctNotHSgrad` and `ownHousQrange`, while second model has `pctCollGrad`). Since the two models overlap significantly, we are again confident that the global optimal model is the one with the lower AIC value. The coefficients shown below show how similar the models are. (Note: b/f is step-wise starting at maximal model, f/b is step-wise starting at minimal model)
 
 \fontsize{9}{11} \selectfont
 \begin{center}
@@ -255,7 +258,7 @@ fitB <- glmnet(X2, y2, alpha = 1)
 plot(fitB, xvar = "lambda", label = TRUE, sub = "LASSO Regression on Non-Violent Crime", cex.main = .7)}
 ```
 
-Note that the variables `region`, `isUrban`, `pctHousOccup` and `pctHousOwnerOccup` still have non-zero coefficients for higher values of lambda (our penalty factor) in the case of violent crime, and `region`, `isUrban`, `pctHousOccup` and `pctWdiv` have non-zero coefficients for higher values of lambda. This is fairly consistent with what we found when using stepwise regression for variable selection: `region` and `isUrban` are identified as important by both stepwise and LASSO regression for both types of crime. We also see that `pctHousOccup` and `pctWdiv` are important explanatory variables for non-violent crime according to both stepwise and LASSO regression. Additionally `pctHousOccup` is chosen by stepwise regression for violent crime and is kept for most values of lambda in lasso regression. The only difference we see is that `pctHousOwnerOccup` is not chosen by stepwise regression when modelling violent crime rates but it is kept for most values of lambda by LASSO, although with a very small coefficient.
+Note that the variables `region`, `isUrban`, `pctHousOccup` and `pctHousOwnerOccup` still have non-zero coefficients for higher values of lambda (our penalty factor) in the case of violent crime, and `region`, `isUrban`, `pctHousOccup` and `pctWdiv` have non-zero coefficients for higher values of lambda. This is fairly consistent with what we found when using step-wise regression for variable selection: `region` and `isUrban` are identified as important by both step-wise and LASSO regression for both types of crime. We also see that `pctHousOccup` and `pctWdiv` are important explanatory variables for non-violent crime according to both step-wise and LASSO regression. Additionally `pctHousOccup` is chosen by step-wise regression for violent crime and is kept for most values of lambda in lasso regression. The only difference we see is that `pctHousOwnerOccup` is not chosen by step-wise regression when modelling violent crime rates but it is kept for most values of lambda by LASSO, although with a very small coefficient.
 
 Here we find optimal values of lambda to minimise error in the model (Appendix 10):
 
@@ -310,7 +313,7 @@ Getting the following results:
 + LASSO Regression Model for Violent Crime - MSE = 0.42072263243735
 + LASSO Regression Model for Non-Violent Crime - MSE = 0.157273523662924
 
-From this we see that the models using stepwise regression (minimising AIC) to select variables give the lowest MSE.
+From this we see that the models using step-wise regression (minimising AIC) to select variables give the lowest MSE.
 
 ## Outliers and Multicollinearity
 After finalising the model parameters, there may be outliers or multicollinearity affecting the parameter coefficients of our model, thus we need to investigate further into the variables.
@@ -322,7 +325,7 @@ After finalising the model parameters, there may be outliers or multicollinearit
 ```{r echo = FALSE, fig.height=3.8}
 plot(violentModelAICMin, which = 3, sub.caption = "")
 ```
-Through the standarised residuals plot, we conclude that there are no outliers. However, before finalising the parameter coefficients, we noticed that the model fitted certain variables which had some correlation with each other, such as `rentMed` with `medIncome`. 
+Through the standardised residuals plot, we conclude that there are no outliers. However, before finalising the parameter coefficients, we noticed that the model fitted certain variables which had some correlation with each other, such as `rentMed` with `medIncome`. 
 
 Including variables which are highly correlated with each other in the linear model may lead to unreliable parameter coefficients. Therefore, we compute the variance inflation factors to check for multicollinearity in our model.
 
@@ -336,7 +339,7 @@ With `pctKids2Par`, `pctKidsBornNevrMarr`, `medIncome` and `rentMed` having vari
 plot(nonViolModelAICMin, which = 3, sub.caption = "")
 ```
 
-The standardized residuals plot above shows that there are 3 outliers. Although further investigation suggests that the 3 observations are valid, we would still remove them from the dataset before fitting a linear model to prevent the 3 outliers from affecting the model.
+The standardized residuals plot above shows that there are 3 outliers. Although further investigation suggests that the 3 observations are valid, we would still remove them from the data set before fitting a linear model to prevent the 3 outliers from affecting the model.
 
 \begin{center} \textbf{Figure E} \end{center}
 
@@ -371,9 +374,9 @@ nonViolModelRidge = cv.glmnet(model.matrix(nonViolModelAICMin), USACrime2NV$nonV
 ```
 
 ## Final Model
-Using 2 stepwise regression to finalise the model parameters, together with cross validation ridge regression to manage multicollinearity in our model parameters and maximise the predictive power of our model concurrently, we have found our final model parameters for both volient and non violent crime.
+Using 2 step-wise regression to finalise the model parameters, together with cross validation ridge regression to manage multicollinearity in our model parameters and maximise the predictive power of our model concurrently, we have found our final model parameters for both violent and non violent crime.
 
-After computing the difference between actual log(`violentPerPop`) with the predicted values, we create a boxplot (below) of the errors for each state which are distributed mostly around zero, indicating the model predicts the violent crime rates for those states well. However, North Dakota does not seem to conform with the general pattern of the model, consistently having actual violent crime rates lower than the predicted violent crime rates.
+As we discussed in our findings, after computing the difference between actual log(`violentPerPop`) with the predicted values, we create a box plot (Figure F) of the errors for each state which are distributed mostly around zero, indicating the model predicts the violent crime rates for those states well. However, North Dakota does not seem to conform with the general pattern of the model, consistently having actual violent crime rates lower than the predicted violent crime rates.
 
 \begin{center} \textbf{Figure F} \end{center}
 
@@ -383,7 +386,7 @@ boxplot(USACrime2$violentError ~ USACrime2$State, xlab = "State", ylab = "Error 
 abline(h=0, col = "red")
 ```
 
-For non-violent crime rates on the other hand, the difference between actual and predicted values for all states does appear to be distributed around zero, so we can conclude that all states conform to the general pattern.
+For non-violent crime rates on the other hand, the difference between actual and predicted values for all states does appear to be distributed around zero, so we can conclude that all states conform to the general pattern. (Figure G)
 
 \begin{center} \textbf{Figure G} \end{center}
 
@@ -597,7 +600,7 @@ AIC(model6A)
 AIC(model6B)
 ```
 
-Appendix 12 - MSE of the models from stepwise regression with AIC and LASSO
+Appendix 12 - MSE of the models from step-wise regression with AIC and LASSO
 ```{r eval = FALSE}
 paste("violentModelAIC MSE =",mean(violentModelAICMin$residuals^2))
 paste("nonViolModelAIC MSE =",mean(nonViolModelAICMin$residuals^2))
@@ -633,7 +636,7 @@ nonViolModelRidge = cv.glmnet(model.matrix(nonViolModelAICMin),
 coef(violentModelRidge)
 ```
 
-Appendix 15 - Boxplot of errors across states (Violent Crime)
+Appendix 15 - Box-plot of errors across states (Violent Crime) (Figure F)
 ```{r, eval=FALSE, fig.height = 3.5}
 USACrime2$violentError = USACrime2$violentPerPop -
   predict(violentModelRidge, newx = model.matrix(violentModelAICMin))
@@ -641,7 +644,7 @@ boxplot(USACrime2$violentError ~ USACrime2$State, cex.axis = 0.6, cex.lab = 0.9)
 abline(h=0, col = "red")
 ```
 
-Appendix 16 - Boxplot of errors across states (Non-Violent Crime)
+Appendix 16 - Box-plot of errors across states (Non-Violent Crime) (Figure G)
 ```{r, eval=FALSE, fig.height = 3.5}
 USACrime3 = USACrime2[c(-320,-363,-1548),]
 USACrime3$nonViolError = USACrime3$nonViolPerPop - 
